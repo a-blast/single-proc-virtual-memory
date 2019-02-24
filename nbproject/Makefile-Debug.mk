@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/MemoryAllocator.o \
 	${OBJECTDIR}/main.o
 
 
@@ -63,6 +64,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/program2: ../MemorySubsystemW2019/dis
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/program2: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/program2 ${OBJECTFILES} ${LDLIBSOPTIONS}
+
+${OBJECTDIR}/MemoryAllocator.o: MemoryAllocator.cpp
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -I../MemorySubsystemW2019 -std=c++14 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/MemoryAllocator.o MemoryAllocator.cpp
 
 ${OBJECTDIR}/main.o: main.cpp
 	${MKDIR} -p ${OBJECTDIR}

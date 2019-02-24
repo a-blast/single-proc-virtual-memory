@@ -1,9 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* 
  * File:   main.cpp
  * Author: aarmstrong
@@ -11,14 +5,25 @@
  * Created on February 24, 2019, 10:51 AM
  */
 
+#include "MemoryAllocator.h"
+
+#include <MMU.h>
 #include <cstdlib>
+#include <iostream>
+#include <memory>
 
-using namespace std;
-
-/*
- * 
- */
 int main(int argc, char** argv) {
+
+  if (argc != 2) {
+    std::cerr << "usage: Lab4 trace_file\n";
+    exit(1);
+  }
+
+  // 1. Create a instance of MMU w/ 128 (0x80) page frames
+  mem::MMU* memory = new mem::MMU(128);
+
+  // initialize an allocator that points to the MMU physical mem instance
+  MemoryAllocator allocator(128, memory);
 
     return 0;
 }
