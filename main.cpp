@@ -23,8 +23,13 @@ int main(int argc, char** argv) {
   mem::MMU* memory = new mem::MMU(128);
 
   // initialize an allocator that points to the MMU physical mem instance
-  MemoryAllocator allocator(128, memory);
+  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
 
-    return 0;
+  delete memory;
+  delete allocator;
+
+  memory = NULL;
+  allocator = NULL;
+  return 0;
 }
 

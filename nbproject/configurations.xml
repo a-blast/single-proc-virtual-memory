@@ -5,6 +5,7 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>MemoryAllocator.h</itemPath>
+      <itemPath>Process.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -14,12 +15,19 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>MemoryAllocator.cpp</itemPath>
+      <itemPath>Process.cpp</itemPath>
       <itemPath>main.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
                    projectFiles="false"
                    kind="TEST_LOGICAL_FOLDER">
+      <logicalFolder name="f1"
+                     displayName="New Test 1"
+                     projectFiles="true"
+                     kind="TEST">
+        <itemPath>traceTests.cpp</itemPath>
+      </logicalFolder>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -74,6 +82,27 @@
       </item>
       <item path="MemoryAllocator.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="Process.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Process.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <commandlineTool>g++</commandlineTool>
+          <commandLine>-g -std=c++14 -lgtest -lpthread</commandLine>
+        </linkerTool>
+      </folder>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="trace1v.txt" ex="false" tool="3" flavor2="0">
@@ -95,6 +124,8 @@
       <item path="trace5v_pagefaults.txt" ex="false" tool="3" flavor2="0">
       </item>
       <item path="trace5v_pagefaults.txt.out" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="traceTests.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -141,6 +172,25 @@
       </item>
       <item path="MemoryAllocator.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="Process.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Process.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+        </linkerTool>
+      </folder>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="trace1v.txt" ex="false" tool="3" flavor2="0">
@@ -162,6 +212,8 @@
       <item path="trace5v_pagefaults.txt" ex="false" tool="3" flavor2="0">
       </item>
       <item path="trace5v_pagefaults.txt.out" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="traceTests.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
   </confs>
