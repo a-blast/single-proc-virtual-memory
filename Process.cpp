@@ -48,8 +48,6 @@ void Process::Exec(void) {
   
   // Select the command to execute
   while (ParseCommand(line, cmd, cmdArgs)) {
-    // if (cmd == "memsize" ) {
-    //   CmdMemsize(line, cmd, cmdArgs);    // allocate memory
     if(cmd == "alloc"){
       outStream << " TODO: implement alloc";
     } else if (cmd == "cmp") {
@@ -135,24 +133,18 @@ bool Process::ParseCommand(
   } else if (trace.eof()) {
       return false;
   } else {
-    cerr << "ERROR: getline failed on trace file: " << file_name 
+    cerr << "ERROR: getline failed on trace file: " << file_name
             << " at line " << line_number << "\n";
     exit(2);
   }
 }
 
-void Process::CmdMemsize(const string &line,
-                         const string &cmd,
-                         const vector<uint32_t> &cmdArgs) {
-  if (cmdArgs.size() == 1) {
-    // Round up to next multiple of page size
-    Addr pages = (cmdArgs.at(0) + mem::kPageSize - 1) / mem::kPageSize;
-    // Allocate the specified memory size
-    memory = std::make_unique<mem::MMU>(pages);
-  } else {
-    cerr << "ERROR: badly formatted memsize command\n";
-    exit(2);
-  }
+void Process::CmdAlloc(const std::string &line,
+                       const std::string &cmd,
+                       const std::vector<uint32_t> &cmdArgs){
+  // Request n pages starting from vaddr from the allocator
+  // Vaddr must be a multiple of 0x4000
+  // pages allocated must be writable and initialized to 0
 }
 
 void Process::CmdCmp(const string &line,
