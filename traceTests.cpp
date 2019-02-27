@@ -59,6 +59,26 @@ TEST(ProcessOutput, trace1){
   ss = processOutputGetter("./trace1v.txt");
   validateOutput(ss.str(), getExpectedOutput("./trace1v.txt.out"));
 }
+TEST(ProcessOutput, trace2){
+  std::istringstream ss;
+  ss = processOutputGetter("./trace2v_multi-page.txt");
+  validateOutput(ss.str(), getExpectedOutput("./trace2v_multi-page.txt.out"));
+}
+TEST(ProcessOutput, trace3){
+  std::istringstream ss;
+  ss = processOutputGetter("./trace3v_edge-addr.txt");
+  validateOutput(ss.str(), getExpectedOutput("./trace3v_edge-addr.txt.out"));
+}
+TEST(ProcessOutput, trace4){
+  std::istringstream ss;
+  ss = processOutputGetter("./trace4v_wprotect.txt");
+  validateOutput(ss.str(), getExpectedOutput("./trace4v_wprotect.txt.out"));
+}
+TEST(ProcessOutput, trace5){
+  std::istringstream ss;
+  ss = processOutputGetter("./trace5v_pagefaults.txt");
+  validateOutput(ss.str(), getExpectedOutput("./trace5v_pagefaults.txt.out"));
+}
 
 int main(int argc, char* argv[]){
   ::testing::InitGoogleTest(&argc,argv);
