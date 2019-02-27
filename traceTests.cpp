@@ -5,13 +5,15 @@
 # include <string>
 # include <iostream>
 
-# TODO need to redirect process output to a logging class so it can be
-# validated in this test.
+// TODO need to redirect process output to a logging class so it can be
+// validated in this test.
 
 auto processOutputGetter =
   [](std::string filePath){
     Process proc(filePath);
-    return; // std::istringstream(proc.Exec());
+    proc.Exec();
+    std::istringstream outStream(proc.getStream());
+    return outStream;
   };
 auto getExpectedOutput =
   [](std::string filePath){
@@ -23,17 +25,29 @@ auto getExpectedOutput =
     return testFile;
   };
 auto validateOutput =
-  [](std::istringstream outputStream, std::ifstream validationStream,
-     bool debug=false, int breakCount = 5){
+  [](std::string output, std::ifstream validationStream,
+     bool debug=true, int breakCount = 5){
     std::string outputLine;
     std::string validationLine;
+    std::istringstream outputStream(output);
+
+    // getline(validationStream, validationLine);
+    // std::cout << validationLine << "\n";
+
+    // getline(outputStream, outputLine);
+    // std::cout << outputLine << "\n";
+
+    // getline(outputStream, outputLine);
+    // std::cout << outputLine << "\n";
     bool linesAreEqual;
     int failureCounter = 0;
     while(getline(outputStream, outputLine)){
       getline(validationStream, validationLine);
-      if(debug){std::cout << "O: " << outputLine << "\n"
-                          << "E: " << validationLine << "\n~~~\n";}
       linesAreEqual = (validationLine == outputLine);
+      if(debug){std::cout << (linesAreEqual?"\n~~~\n":"")
+                          << "O: " << outputLine << "\n"
+                          << "E: " << validationLine
+                          << (linesAreEqual?"\n~~~\n":"");}
       EXPECT_EQ(true, linesAreEqual);
       if(!linesAreEqual){failureCounter++;}
       if(failureCounter == breakCount){break;}
@@ -41,7 +55,9 @@ auto validateOutput =
   };
 
 TEST(ProcessOutput, trace1){
-    EXPECT_EQ(true,true);
+  std::istringstream ss;
+  ss = processOutputGetter("./trace1v.txt");
+  validateOutput(ss.str(), getExpectedOutput("./trace1v.txt.out"));
 }
 
 int main(int argc, char* argv[]){

@@ -44,26 +44,45 @@ void Process::Exec(void) {
   string line;                // text line read
   string cmd;                 // command from line
   vector<uint32_t> cmdArgs;   // arguments from line
+  int lineNumber = 0;
   
   // Select the command to execute
   while (ParseCommand(line, cmd, cmdArgs)) {
-    if (cmd == "memsize" ) {
-      CmdMemsize(line, cmd, cmdArgs);    // allocate memory
+    // if (cmd == "memsize" ) {
+    //   CmdMemsize(line, cmd, cmdArgs);    // allocate memory
+    if(cmd == "alloc"){
+      outStream << " TODO: implement alloc";
     } else if (cmd == "cmp") {
-      CmdCmp(line, cmd, cmdArgs);        // get and compare multiple bytes
+      outStream << " TODO: implement cmd";
+      //CmdCmp(line, cmd, cmdArgs);        // get and compare multiple bytes
     } else if (cmd == "set") {
-      CmdSet(line, cmd, cmdArgs);        // put bytes
+      outStream << "TODO: implement set";
+      //CmdSet(line, cmd, cmdArgs);        // put bytes
     } else if (cmd == "fill") {
-      CmdFill(line, cmd, cmdArgs);       // fill bytes with value
+      outStream << " TODO: implement fill";
+      //CmdFill(line, cmd, cmdArgs);       // fill bytes with value
     } else if (cmd == "dup") {
-      CmdDup(line, cmd, cmdArgs);        // duplicate bytes to dest from source
+      outStream << " TODO: implement dup";
+      //CmdDup(line, cmd, cmdArgs);        // duplicate bytes to dest from source
     } else if (cmd == "print") {
-      CmdPrint(line, cmd, cmdArgs);      // dump byte values to output
+      outStream << " TODO: implement print";
+      //CmdPrint(line, cmd, cmdArgs);      // dump byte values to output
+    } else if (cmd == "perm"){
+      outStream << " TODO: implement perm";
+    } else if (cmd == "*"){
+      //outStream << line << "\n";
     } else if (cmd != "*") {
-      cerr << "ERROR: invalid command\n";
+      cerr << "ERROR: invalid command";
       exit(2);
     }
+
+    // newline, so TODO messages get put on their relevant command lines
+    outStream << "\n";
   }
+}
+
+std::string Process::getStream(){
+  return outStream.str();
 }
 
 bool Process::ParseCommand(
@@ -74,7 +93,7 @@ bool Process::ParseCommand(
   // Read next line
   if (std::getline(trace, line)) {
     ++line_number;
-    cout << std::dec << line_number << ":" << line << "\n";
+    outStream << std::dec << line_number << ":" << line;
     
     // No further processing if comment or empty line
     if (line.size() == 0 || line[0] == '*') {
@@ -156,7 +175,7 @@ void Process::CmdCmp(const string &line,
     uint8_t v2 = 0;
     memory->movb(&v2, a2);
     if(v1 != v2) {
-      cout << std::setfill('0') << std::hex
+      outStream << std::setfill('0') << std::hex
               << "cmp error"
               << ", addr1 = "  << std::setw(7) << a1
               << ", value = " << std::setw(2) << static_cast<uint32_t>(v1)
@@ -232,12 +251,12 @@ void Process::CmdPrint(const string &line,
   // Output the specified number of bytes starting at the address
   for (int i = 0; i < count; ++i) {
     if ((i % 16) == 0) { // Write new line with address every 16 bytes
-      if (i > 0) cout << "\n";  // not before first line
-      cout << std::hex << std::setw(7) << std::setfill('0') << addr << ":";
+      if (i > 0) outStream << "\n";  // not before first line
+      outStream << std::hex << std::setw(7) << std::setfill('0') << addr << ":";
     }
     uint8_t b;
     memory->movb(&b, addr++);
-    cout << " " << std::setfill('0') << std::setw(2) << static_cast<uint32_t> (b);
+    outStream << " " << std::setfill('0') << std::setw(2) << static_cast<uint32_t> (b);
   }
-  cout << "\n";
+  outStream << "\n";
 }

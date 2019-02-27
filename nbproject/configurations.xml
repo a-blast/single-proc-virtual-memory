@@ -23,7 +23,7 @@
                    projectFiles="false"
                    kind="TEST_LOGICAL_FOLDER">
       <logicalFolder name="f1"
-                     displayName="New Test 1"
+                     displayName="traceTests"
                      projectFiles="true"
                      kind="TEST">
         <itemPath>traceTests.cpp</itemPath>

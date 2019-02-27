@@ -70,6 +70,7 @@
 
 #include <MMU.h>
 
+#include <sstream>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -100,12 +101,16 @@ public:
    * 
    */
   void Exec(void);
+
+  std::string getStream();
   
 private:
   // Trace file
   std::string file_name;
   std::fstream trace;
   long line_number;
+
+  std::stringstream outStream;
 
   // Memory contents
   std::unique_ptr<mem::MMU> memory;
