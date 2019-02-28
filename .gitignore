@@ -1,2 +1,6 @@
 /dist/
 /build/
+/nbproject/project.xml
+/nbproject/Makefile-impl.mk
+/nbproject/Makefile-Debug.mk
+/nbproject/
