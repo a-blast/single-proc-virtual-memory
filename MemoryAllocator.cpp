@@ -132,13 +132,13 @@ uint32_t MemoryAllocator::get_free_list_head() const {
 }
 
 void MemoryAllocator::set_page_frames_free(uint32_t page_frames_free) {
-  memcpy(&memory[kPageFramesFree], &page_frames_free, sizeof(uint32_t));
+  memory->movb(kPageFramesFree, &page_frames_free, sizeof(uint32_t));
 }
 
 void MemoryAllocator::set_page_frames_total(uint32_t page_frames_total) {
-  memcpy(&memory[kPageFramesTotal], &page_frames_total, sizeof(uint32_t));
+  memory->movb(kPageFramesTotal, &page_frames_total, sizeof(uint32_t));
 }
 
 void MemoryAllocator::set_free_list_head(uint32_t free_list_head) {
-  memcpy(&memory[kFreeListHead], &free_list_head, sizeof(uint32_t));
+  memory->movb(kFreeListHead, &free_list_head, sizeof(uint32_t));
 }
