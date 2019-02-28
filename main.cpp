@@ -35,9 +35,9 @@ int main(int argc, char** argv) {
   mem::MMU* memory = new mem::MMU(128);
 
   // Set kernel page table
-  mem::pageTable kernelPT = setPageTable(*memory, mem::kPageSize);
+  setPageTable(*memory, mem::kPageSize);
   mem::PMCB kernel_pmcb(mem::kPageSize);
-  memory.enter_virtual_mode(kernel_pmcb);
+  memory->enter_virtual_mode(kernel_pmcb);
 
   // initialize an allocator that points to the MMU physical mem instance
   MemoryAllocator* allocator = new MemoryAllocator(128, memory);
