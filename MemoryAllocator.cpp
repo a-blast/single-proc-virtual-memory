@@ -12,6 +12,7 @@
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
 
 MemoryAllocator::MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr ) 
 : memory(memoryPtr)
@@ -21,21 +22,24 @@ MemoryAllocator::MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr 
   }
   
   // Set free list empty
-  uint32_t free_list_head = kEndList;
+  mem::Addr free_list_head[1];
+  free_list_head[0] = kEndList;
   
   // Add all page frames except 0 to free list
-  uint32_t frame = (page_frame_count - 1) * kPageSize;
-  
+  mem::Addr frame = (page_frame_count - 1) * kPageSize;
+
+  // TODO: change this to MMU movb commands
   while (frame > 0) {
-    memcpy(&memory[frame], &free_list_head, sizeof(uint32_t));
-    free_list_head = frame;
+    memory->movb(frame, &free_list_head, sizeof(uint32_t));
+    free_list_head[0] = frame;
     frame -= kPageSize;
   }
-  
   // Initialize list info in page 0
-  set_free_list_head(free_list_head);
+  set_free_list_head(free_list_head[0]);
   set_page_frames_free(page_frame_count - 1);
   set_page_frames_total(page_frame_count);
+
+  std::cout << "OUT OF CONSTRUCTOR\n";
 }
 
 bool MemoryAllocator::AllocatePageFrames(uint32_t count, 

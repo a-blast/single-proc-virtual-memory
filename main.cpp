@@ -34,13 +34,14 @@ int main(int argc, char** argv) {
   // 1. Create a instance of MMU w/ 128 (0x80) page frames
   mem::MMU* memory = new mem::MMU(128);
 
+  // initialize an allocator that points to the MMU physical mem instance
+  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
+
   // Set kernel page table
   setPageTable(*memory, mem::kPageSize);
   mem::PMCB kernel_pmcb(mem::kPageSize);
   memory->enter_virtual_mode(kernel_pmcb);
 
-  // initialize an allocator that points to the MMU physical mem instance
-  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
 
   delete memory;
   delete allocator;
