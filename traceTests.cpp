@@ -11,8 +11,8 @@
 // validated in this test.
 
 auto processOutputGetter =
-  [](std::string filePath){
-    Process proc(filePath);
+  [](std::string filePath, mem::MMU *memory, MemoryAllocator *allocator){
+    Process proc(filePath, memory, allocator);
     proc.Exec();
     std::istringstream outStream(proc.getStream());
     return outStream;
@@ -28,19 +28,10 @@ auto getExpectedOutput =
   };
 auto validateOutput =
   [](std::string output, std::ifstream validationStream,
-     bool debug=true, int breakCount = 5){
+     bool debug, int breakCount = 5){
     std::string outputLine;
     std::string validationLine;
     std::istringstream outputStream(output);
-
-    // getline(validationStream, validationLine);
-    // std::cout << validationLine << "\n";
-
-    // getline(outputStream, outputLine);
-    // std::cout << outputLine << "\n";
-
-    // getline(outputStream, outputLine);
-    // std::cout << outputLine << "\n";
     bool linesAreEqual;
     int failureCounter = 0;
     while(getline(outputStream, outputLine)){
@@ -49,7 +40,7 @@ auto validateOutput =
       if(debug){std::cout << (linesAreEqual?"\n~~~\n":"")
                           << "O: " << outputLine << "\n"
                           << "E: " << validationLine
-                          << (linesAreEqual?"\n~~~\n":"");}
+                          << (linesAreEqual?"\n~~~\n":"\n");}
       EXPECT_EQ(true, linesAreEqual);
       if(!linesAreEqual){failureCounter++;}
       if(failureCounter == breakCount){break;}
@@ -57,34 +48,94 @@ auto validateOutput =
   };
 
 
+mem::MMU* memory; // = new mem::MMU(128);
+
 TEST(ProcessOutput, trace1){
+  delete memory;
+  memory = nullptr;
+  memory = new mem::MMU(128);
+  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
   std::istringstream ss;
-  ss = processOutputGetter("./trace1v.txt");
-  validateOutput(ss.str(), getExpectedOutput("./trace1v.txt.out"));
-}
-TEST(ProcessOutput, trace2){
-  std::istringstream ss;
-  ss = processOutputGetter("./trace2v_multi-page.txt");
-  validateOutput(ss.str(), getExpectedOutput("./trace2v_multi-page.txt.out"));
-}
-TEST(ProcessOutput, trace3){
-  std::istringstream ss;
-  ss = processOutputGetter("./trace3v_edge-addr.txt");
-  validateOutput(ss.str(), getExpectedOutput("./trace3v_edge-addr.txt.out"));
-}
-TEST(ProcessOutput, trace4){
-  std::istringstream ss;
-  ss = processOutputGetter("./trace4v_wprotect.txt");
-  validateOutput(ss.str(), getExpectedOutput("./trace4v_wprotect.txt.out"));
-}
-TEST(ProcessOutput, trace5){
-  std::istringstream ss;
-  ss = processOutputGetter("./trace5v_pagefaults.txt");
-  validateOutput(ss.str(), getExpectedOutput("./trace5v_pagefaults.txt.out"));
+  ss = processOutputGetter("./trace1v.txt", memory, allocator);
+  validateOutput(ss.str(), getExpectedOutput("./trace1v.txt.out"),false);
+  delete memory;
+  memory = nullptr;
 }
 
+TEST(ProcessOutput, trace2){
+  delete memory;
+  memory = nullptr;
+  memory = new mem::MMU(128);
+  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
+  std::istringstream ss;
+  ss = processOutputGetter("./trace2v_multi-page.txt", memory, allocator);
+  validateOutput(ss.str(), getExpectedOutput("./trace2v_multi-page.txt.out"),false);
+  delete memory;
+  memory = nullptr;
+}
+
+TEST(ProcessOutput, trace3){
+  delete memory;
+  memory = nullptr;
+  memory = new mem::MMU(128);
+  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
+  std::istringstream ss;
+  ss = processOutputGetter("./trace3v_edge-addr.txt", memory, allocator);
+  validateOutput(ss.str(), getExpectedOutput("./trace3v_edge-addr.txt.out"),false);
+  delete memory;
+  memory = nullptr;
+}
+
+TEST(ProcessOutput, trace4){
+  delete memory;
+  memory = nullptr;
+  memory = new mem::MMU(128);
+  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
+  std::istringstream ss;
+  ss = processOutputGetter("./trace4v_wprotect.txt", memory, allocator);
+  validateOutput(ss.str(), getExpectedOutput("./trace4v_wprotect.txt.out"),true);
+  delete memory;
+  memory = nullptr;
+}
+
+TEST(ProcessOutput, trace5){
+  delete memory;
+  memory = nullptr;
+  memory = new mem::MMU(128);
+  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
+  std::istringstream ss;
+  ss = processOutputGetter("./trace5v_pagefaults.txt", memory, allocator);
+  validateOutput(ss.str(), getExpectedOutput("./trace5v_pagefaults.txt.out"),true);
+  delete memory;
+  memory = nullptr;
+}
+
+// TEST(ProcessOutput, trace2){
+//   std::istringstream ss;
+//   ss = processOutputGetter("./trace2v_multi-page.txt");
+//   validateOutput(ss.str(), getExpectedOutput("./trace2v_multi-page.txt.out"));
+// }
+// TEST(ProcessOutput, trace3){
+//   std::istringstream ss;
+//   ss = processOutputGetter("./trace3v_edge-addr.txt");
+//   validateOutput(ss.str(), getExpectedOutput("./trace3v_edge-addr.txt.out"));
+// }
+// TEST(ProcessOutput, trace4){
+//   std::istringstream ss;
+//   ss = processOutputGetter("./trace4v_wprotect.txt");
+//   validateOutput(ss.str(), getExpectedOutput("./trace4v_wprotect.txt.out"));
+// }
+// TEST(ProcessOutput, trace5){
+//   std::istringstream ss;
+//   ss = processOutputGetter("./trace5v_pagefaults.txt");
+//   validateOutput(ss.str(), getExpectedOutput("./trace5v_pagefaults.txt.out"));
+// }
+
 TEST(MemAllocator, Allocate){
-  mem::MMU* memory = new mem::MMU(128);
+
+  delete memory;
+  memory = nullptr;
+  memory = new mem::MMU(128);
 
   // initialize an allocator that points to the MMU physical mem instance
   MemoryAllocator* allocator = new MemoryAllocator(128, memory);

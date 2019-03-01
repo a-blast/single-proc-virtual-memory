@@ -7,7 +7,9 @@
  */
 
 #include "Process.h"
+#include "MemoryAllocator.h"
 
+#include <MMU.h>
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -25,8 +27,9 @@ using std::istringstream;
 using std::string;
 using std::vector;
 
-Process::Process(string file_name_) 
-: file_name(file_name_), line_number(0) {
+Process::Process(string file_name_, mem::MMU* memoryPtr, MemoryAllocator* allocatorPtr)
+  : file_name(file_name_), line_number(0),
+    memory(memoryPtr), allocator(allocatorPtr), hasPageTable(false){
   // Open the trace file.  Abort program if can't open.
   trace.open(file_name, std::ios_base::in);
   if (!trace.is_open()) {
@@ -49,33 +52,34 @@ void Process::Exec(void) {
   // Select the command to execute
   while (ParseCommand(line, cmd, cmdArgs)) {
     if(cmd == "alloc"){
-      outStream << " TODO: implement alloc";
+      CmdAlloc(line, cmd, cmdArgs);
+      outStream << "\n";
     } else if (cmd == "cmp") {
-      outStream << " TODO: implement cmd";
-      //CmdCmp(line, cmd, cmdArgs);        // get and compare multiple bytes
+      outStream << "\n";
+      CmdCmp(line, cmd, cmdArgs);        // get and compare multiple bytes
     } else if (cmd == "set") {
-      outStream << "TODO: implement set";
-      //CmdSet(line, cmd, cmdArgs);        // put bytes
+      outStream << "\n";
+      CmdSet(line, cmd, cmdArgs);        // put bytes
     } else if (cmd == "fill") {
-      outStream << " TODO: implement fill";
-      //CmdFill(line, cmd, cmdArgs);       // fill bytes with value
+      outStream << "\n";
+      CmdFill(line, cmd, cmdArgs);       // fill bytes with value
     } else if (cmd == "dup") {
-      outStream << " TODO: implement dup";
-      //CmdDup(line, cmd, cmdArgs);        // duplicate bytes to dest from source
+      outStream << "\n";
+      CmdDup(line, cmd, cmdArgs);        // duplicate bytes to dest from source
     } else if (cmd == "print") {
-      outStream << " TODO: implement print";
-      //CmdPrint(line, cmd, cmdArgs);      // dump byte values to output
+      outStream << "\n";
+      CmdPrint(line, cmd, cmdArgs);      // dump byte values to output
     } else if (cmd == "perm"){
-      outStream << " TODO: implement perm";
+      outStream << " TODO: implement perm\n";
     } else if (cmd == "*"){
-      //outStream << line << "\n";
+      outStream << "\n";
     } else if (cmd != "*") {
-      cerr << "ERROR: invalid command";
+      cerr << "ERROR: invalid command\n";
       exit(2);
     }
 
     // newline, so TODO messages get put on their relevant command lines
-    outStream << "\n";
+    //outStream << "\n";
   }
 }
 
@@ -145,6 +149,8 @@ void Process::CmdAlloc(const std::string &line,
   // Request n pages starting from vaddr from the allocator
   // Vaddr must be a multiple of 0x4000
   // pages allocated must be writable and initialized to 0
+  allocator->Alloc((mem::Addr) cmdArgs.at(0), (int) cmdArgs.at(1), hasPageTable);
+  if(!hasPageTable){hasPageTable = true;}
 }
 
 void Process::CmdCmp(const string &line,

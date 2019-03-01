@@ -68,6 +68,8 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
+#include "MemoryAllocator.h"
+
 #include <MMU.h>
 
 #include <sstream>
@@ -83,7 +85,7 @@ public:
    * 
    * @param file_name_ source of trace commands
    */
-  Process(std::string file_name_);
+  Process(std::string file_name_, mem::MMU* memoryPtr, MemoryAllocator* allocatorPtr);
   
   /**
    * Destructor - close trace file, clean up processing
@@ -113,8 +115,12 @@ private:
   std::stringstream outStream;
 
   // Memory contents
-  std::unique_ptr<mem::MMU> memory;
-  
+  mem::MMU *memory;
+
+  MemoryAllocator *allocator;
+
+  bool hasPageTable;
+
   /**
    * ParseCommand - parse a trace file command.
    *   Aborts program if invalid trace file.
