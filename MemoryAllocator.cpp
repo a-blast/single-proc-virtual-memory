@@ -20,56 +20,52 @@ MemoryAllocator::MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr 
   if (page_frame_count <= 1) {
     throw std::runtime_error("page_frame_count must be > 1");
   }
-  
-  // Set free list empty
-  mem::Addr free_list_head[1];
-  free_list_head[0] = kEndList;
-  
-  // Add all page frames except 0 to free list
-  mem::Addr frame = (page_frame_count - 1) * kPageSize;
 
-  // TODO: change this to MMU movb commands
-  while (frame > 0) {
-    memory->movb(frame, &free_list_head, sizeof(uint32_t));
-    free_list_head[0] = frame;
-    frame -= kPageSize;
+  // Create the kernel page table
+  mem::PageTable kernel_page_table;  // local copy of page table to build, initialized to 0
+  mem::Addr num_pages = memory->get_frame_count();  // size of physical memory
+  // Build page table entries
+  uint32_t pageAddr;
+
+  for (mem::Addr i = 0; i < num_pages; ++i) {
+    //std::cout << ((i << mem::kPageSizeBits) | 0x3) << " ";
+    pageAddr = (i << mem::kPageSizeBits);
+    kernel_page_table.at(i) = 
+      (pageAddr | 0x3);
+    freeList.push_back(pageAddr);
   }
-  // Initialize list info in page 0
-  set_free_list_head(free_list_head[0]);
-  set_page_frames_free(page_frame_count - 1);
-  set_page_frames_total(page_frame_count);
 
-  std::cout << "OUT OF CONSTRUCTOR\n";
+  std::cout << freeList[0] << "," << std::hex << freeList[1] << "\n";
+  // Write page table to memory
+  memory->movb(mem::kPageSize, &kernel_page_table, mem::kPageTableSizeBytes);
+
+  // Enter kernel Virtual Mode
+  mem::PMCB kernel_pmcb(mem::kPageSize);
+  memory->enter_virtual_mode(kernel_pmcb);
+
+  // remove first two frames in free memory
+  freeList.erase(freeList.begin(),freeList.begin()+1);
+
+  // Initialize list info in page 0
+  // #Austin: not sure if we still need this with the stack method
+  // set_free_list_head(mem::kPageSize*2);
+  // set_page_frames_free(page_frame_count - 2);
+  // set_page_frames_total(page_frame_count);
+
 }
 
 bool MemoryAllocator::AllocatePageFrames(uint32_t count, 
                                          std::vector<uint32_t> &page_frames) {
-  // Fetch free list info
-  uint32_t page_frames_free = get_page_frames_free();
-  uint32_t free_list_head = get_free_list_head();
-  
-  // If enough pages available, allocate to caller
-  if (count <= page_frames_free) {  // if enough to allocate
-    while (count-- > 0) {
-      // Return next free frame to caller
-      uint32_t frame = free_list_head;
-      page_frames.push_back(frame);
-      
-      // De-link frame from head of free list
-      memcpy(&free_list_head, &memory[free_list_head], sizeof(uint32_t));
-      --page_frames_free;
-      
-      // Clear page frame to all 0
-      memset(&memory[frame], 0, kPageSize);
+  mem::Addr freeFrame;
+  if(count <= freeList.size()){
+    for(int frameNum = 0; frameNum < count; frameNum++){
+      freeFrame = freeList[freeList.size()-1];
+      freeList.pop_back();
+      page_frames.push_back(freeFrame);
     }
-    
-    // Update free list info
-    set_free_list_head(free_list_head);
-    set_page_frames_free(page_frames_free);
-
     return true;
-  } else {
-    return false;  // do nothing and return error
+  }else{
+    return false;
   }
 }
 
@@ -114,20 +110,25 @@ std::string MemoryAllocator::FreeListToString(void) const {
 }
 
 uint32_t MemoryAllocator::get_page_frames_free() const {
-  uint32_t page_frames_free;
-  memcpy(&page_frames_free, &memory[kPageFramesFree], sizeof(uint32_t));
-  return page_frames_free;
+  uint32_t page_frames_free[1];
+
+  std::cout << sizeof(uint32_t) << "in get\n";
+
+  memory->movb(&page_frames_free,(mem::Addr) kPageFramesFree,(mem::Addr) sizeof(uint32_t));
+  std::cout << "in get\n";
+  return page_frames_free[0];
 }
 
 uint32_t MemoryAllocator::get_page_frames_total() const {
   uint32_t page_frames_total;
-  memcpy(&page_frames_total, &memory[kPageFramesTotal], sizeof(uint32_t));
+  memory->movb(&page_frames_total, kPageFramesTotal, sizeof(uint32_t));
   return page_frames_total;
 }
 
 uint32_t MemoryAllocator::get_free_list_head() const {
   uint32_t free_list_head;
-  memcpy(&free_list_head, &memory[kFreeListHead], sizeof(uint32_t));
+  memory->movb(&free_list_head,(mem::Addr) kFreeListHead,(mem::Addr) sizeof(uint32_t));
+  std::cout << free_list_head <<"\n";
   return free_list_head;
 }
 

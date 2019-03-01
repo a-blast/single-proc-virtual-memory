@@ -64,8 +64,15 @@ public:
    */
   std::string FreeListToString(void) const;
   
-  static const uint32_t kPageSize = 0x2000;
+  static const uint32_t kPageSize = 0x4000;
 private:
+
+  // Friend class for GTEST
+  friend class MemAllocator_Allocate_Test;
+
+  // Vector for holding free page addresses, acts as a stack
+  std::vector<mem::Addr> freeList;
+
   // Vector to hold memory to be allocated
   mem::MMU* memory;
   
@@ -79,7 +86,7 @@ private:
   static const size_t kPageFramesFree = kPageFramesTotal + sizeof(uint32_t);
   
   // End of list marker
-  static const uint32_t kEndList = 0xFFFFFFFF;
+  static const uint32_t kEndList = 0x3FFFFFF;
   
   // Private getters and setters
   uint32_t get_free_list_head(void) const;

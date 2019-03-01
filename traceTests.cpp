@@ -1,6 +1,8 @@
 
 #include "gtest/gtest.h"
 #include "Process.h"
+# include "MemoryAllocator.h"
+# include <MMU.h>
 # include <algorithm>
 # include <string>
 # include <iostream>
@@ -54,6 +56,22 @@ auto validateOutput =
     }
   };
 
+void setPageTable_TEMP_TEST(mem::MMU &vm, mem::Addr pt_addr){
+  mem::PageTable kernel_page_table;  // local copy of page table to build, initialized to 0
+  mem::Addr num_pages = vm.get_frame_count();  // size of physical memory
+  // Build page table entries
+
+
+  for (mem::Addr i = 0; i < num_pages; ++i) {
+    std::cout << ((i << mem::kPageSizeBits) | 0x3) << " ";
+    kernel_page_table.at(i) = 
+      ((i << mem::kPageSizeBits) | 0x3);
+  }
+
+  // Write page table to memory
+  vm.movb(pt_addr, &kernel_page_table, mem::kPageTableSizeBytes);
+}
+
 TEST(ProcessOutput, trace1){
   std::istringstream ss;
   ss = processOutputGetter("./trace1v.txt");
@@ -78,6 +96,19 @@ TEST(ProcessOutput, trace5){
   std::istringstream ss;
   ss = processOutputGetter("./trace5v_pagefaults.txt");
   validateOutput(ss.str(), getExpectedOutput("./trace5v_pagefaults.txt.out"));
+}
+
+TEST(MemAllocator, Allocate){
+  mem::MMU* memory = new mem::MMU(128);
+
+  // initialize an allocator that points to the MMU physical mem instance
+  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
+
+  // Allocate a single page frame
+  std::vector<uint32_t> pageFrames;
+  allocator->AllocatePageFrames(1,pageFrames);
+  std::cout << pageFrames[0] << "\n";
+
 }
 
 int main(int argc, char* argv[]){
