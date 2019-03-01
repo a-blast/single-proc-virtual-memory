@@ -25,6 +25,12 @@ public:
    * @param page_frame_count
    */
   MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr);
+
+  /*
+   * Overloaded constructor, does nothing.
+   * Used for testing functionality procedurally in gtest.
+   */
+  MemoryAllocator();
   
   virtual ~MemoryAllocator() {}  // empty destructor
   
@@ -42,6 +48,17 @@ public:
    * @return true if success, false if insufficient page frames (no frames allocated)
    */
   bool AllocatePageFrames(uint32_t count, std::vector<uint32_t> &page_frames);
+
+  /*
+   * initKernalPageTable - initialize & store a kernal page table in page frame 2
+   */
+  void initKernalPageTable(void);
+
+  /*
+   * initUserPageTable - initialize & store a user page table in an frame provided by the
+   *                     allocator.
+   */
+  void initUserPageTable(void);
 
   mem::Addr Alloc(mem::Addr address, int numFrames, bool hasPageTable);
   
@@ -71,6 +88,7 @@ private:
 
   // Friend class for GTEST
   friend class MemAllocator_Allocate_Test;
+  friend class MemAllocator_initKPT_Test;
 
   // Vector for holding free page addresses, acts as a stack
   std::vector<mem::Addr> freeList;

@@ -22,23 +22,8 @@ MemoryAllocator::MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr 
     throw std::runtime_error("page_frame_count must be > 1");
   }
 
-  // Create the kernel page table
-  mem::PageTable kernel_page_table;  // local copy of page table to build, initialized to 0
-  mem::Addr num_pages = memory->get_frame_count();  // size of physical memory
-  // Build page table entries
-  uint32_t pageAddr;
 
-  for (mem::Addr i = 0; i < num_pages; ++i) {
-    //std::cout << ((i << mem::kPageSizeBits) | 0x3) << " ";
-    pageAddr = (i << mem::kPageSizeBits);
-    kernel_page_table.at(i) = 
-      (pageAddr | 0x3);
-    freeList.push_back(pageAddr);
-  }
-
-  std::cout << freeList[0] << "," << std::hex << freeList[1] << "\n";
-  // Write page table to memory
-  memory->movb(mem::kPageSize, &kernel_page_table, mem::kPageTableSizeBytes);
+  initKernalPageTable();
 
   // Enter kernel Virtual Mode
   mem::PMCB kernel_pmcb(mem::kPageSize);
@@ -55,55 +40,126 @@ MemoryAllocator::MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr 
 
 }
 
+MemoryAllocator::MemoryAllocator(){};
+
+void MemoryAllocator::initKernalPageTable(void){
+  
+  // Create the kernel page table
+  mem::PageTable kernel_page_table;  // local copy of page table to build, initialized to 0
+  mem::Addr num_pages = memory->get_frame_count();  // size of physical memory
+  // Build page table entries
+  uint32_t pageAddr;
+
+  for (mem::Addr i = 0; i < num_pages; ++i) {
+    // std::cout << std::hex << ((i << mem::kPageSizeBits) | 0x3) << " : " << i << "\n";
+    pageAddr = (i << mem::kPageSizeBits);
+    kernel_page_table.at(i) = 
+      (pageAddr | 0x3);
+    // std::cout << std::hex << kernel_page_table.at(i) << " ?\n";
+    freeList.push_back(pageAddr);
+
+  }
+
+  // Write page table to memory in frame 2
+  memory->movb(mem::kPageSize, &kernel_page_table, mem::kPageTableSizeBytes);
+}
+
+void MemoryAllocator::initUserPageTable(void){
+  // allocate 1 page for the UPT (user page table)
+  std::vector<uint32_t> procPageAddr;
+  AllocatePageFrames(1,procPageAddr);
+
+  // convert physical addr of alocated page to virtual address valid with the
+  // KPT
+  uint32_t procPageVirtAddr = (procPageAddr[0]/0x4000) << mem::kPageSizeBits;
+  //std::cout << "UPT BASE: " << std::hex << (procPageVirtAddr) << "\n";
+
+  // Store the empty UPT in memory
+  mem::PageTable procPageTable;
+  memory->movb(procPageVirtAddr, &procPageTable, mem::kPageTableSizeBytes);
+
+  // NOTE: Test code, keeping here for now. Basically ensures the
+  // UPT has been put in memory propery and the the first entry is 0.
+
+  // // Checking the uPT entry (UPTE)... (should be 0)
+  // uint32_t pt_entry;
+  // std::cout << "KPT ADDR: " << std::hex << (procPageVirtAddr >> 14) << "\n";
+  // memory->movb(&pt_entry, procPageVirtAddr , sizeof(uint32_t));
+  // std::cout << "UPTE: " <<  std::hex << pt_entry << "\n";
+
+  // Set to user mode
+  mem::PMCB user_pmcb(procPageVirtAddr);
+  memory->set_user_PMCB(user_pmcb);
+}
+
 mem::Addr MemoryAllocator::Alloc(mem::Addr address, int numFrames, bool hasPageTable){
 
   if(!hasPageTable){
-    // 1 page for the PT
-    std::vector<uint32_t> procPageAddr;
-    AllocatePageFrames(1,procPageAddr);
-
-
-    // convert to virtual address
-    uint32_t procPageVirtAddr = (procPageAddr[0]/0x4000) << mem::kPageSizeBits;
-    // 0 initialize the pages
-    int initializer[mem::kPageSize] = {0};
-    memory->movb(procPageVirtAddr, &initializer, mem::kPageSize);
-
-    mem::PageTable procPageTable;
-    memory->movb(procPageVirtAddr, &procPageTable, mem::kPageTableSizeBytes);
-    mem::PMCB user_pmcb(procPageVirtAddr);
-    memory->set_user_PMCB(user_pmcb);
+    initUserPageTable();
   }
 
+  // allocate the requested # of page frames & get their physical address
   std::vector<uint32_t> allocatedFrameAddr;
   AllocatePageFrames(numFrames, allocatedFrameAddr);
-  std::vector<uint32_t> allocatedFrameVirtAddr;
-  allocatedFrameVirtAddr.resize(allocatedFrameAddr.size());
+
+  // Convert these addr to user page table entries (PTE)
+  std::vector<uint32_t> allocatedFramePTE;
+  allocatedFramePTE.resize(allocatedFrameAddr.size());
 
   std::transform(allocatedFrameAddr.begin(),allocatedFrameAddr.end(),
-                 allocatedFrameVirtAddr.begin(),
+                 allocatedFramePTE.begin(),
                  [](uint32_t addr)
                  {return (((addr/0x4000) << 14) | 0x3);});
 
+  // Save the user PMCB so we can go back
   mem::PMCB user;
   memory->get_user_PMCB(user);
   memory->set_kernel_PMCB();
 
   // 0 initialize the allocated (non PT) pages
-  // TODO clean this up... repeats code from above 
   std::for_each(allocatedFrameAddr.begin(), allocatedFrameAddr.end(),
-                [this](uint32_t vAddr){
+                [this](uint32_t addr){
                   int init[mem::kPageSize] = {0};
-                  this->memory->movb(((vAddr/0x4000) << 14), &init, mem::kPageSize);
+                  uint32_t pageNum = (addr/0x4000);
+                  // std::cout << "vAddr: " << (pageNum << 4) << "\n";
+                  this->memory->movb((pageNum << 14), &init, mem::kPageSize);
                 });
 
-  memory->movb(user.page_table_base,
-               &allocatedFrameVirtAddr,
-               sizeof(uint32_t)*allocatedFrameVirtAddr.size());
 
+  // NOTE: havent tested if this works for multiple page frames.
+  // set the UPTE to point to the allocated page frame at the specified virtual address
+  for(int i = 0; i < allocatedFramePTE.size(); i++){
+    memory->movb((user.page_table_base                   // KPT index address that points to the UPT
+                  +((address/0x4000) * sizeof(uint32_t)) // offset for specific UPTE
+                  +(sizeof(uint32_t)*i)),                // ?offset for multiple page frames?
+                 &allocatedFramePTE[i],
+                 sizeof(uint32_t));
+  }
 
+  // NOTE: below is test code, need to clean up and put into the test script,
+  // uint32_t pt_entry;
+  // // memory->movb(&pt_entry, (127 << 14) + (address/0x4000), sizeof(uint32_t));
+  // // std::cout << "TEST KPT: " << std::hex << (127 << 14) << " : " << pt_entry << "\n";
+  // memory->movb(&pt_entry, user.page_table_base + ((address/0x4000) * sizeof(uint32_t)), sizeof(uint32_t));
+  // std::cout << "TEST: " << std::hex << pt_entry << ":" << allocatedFramePTE[0] << "\n";
+
+  // read out user level page table entry by entry
+  // for(int pte = 0; pte < mem::kPageTableEntries; ++pte){
+  //   memory->movb(&pt_entry, user.page_table_base + (pte * sizeof(uint32_t)), sizeof(uint32_t));
+  //   std::cout << std::hex << pt_entry << " : " << pte << "\n";
+  // }
+
+  // std::cout << "START: " << std::hex << user.page_table_base
+  //           << " : " << address
+  //           << " : " << (address/0x4000)
+  //           << " : " << user.page_table_base+(address/0x4000) 
+  //           << " : " << ((user.page_table_base+(address/0x4000))>>14) << "\n";
 
   memory->set_user_PMCB(user);
+
+  // std::cout << "address test: " << std::hex << (address >> 14) << " : " << (address/0x4000) << "\n"; 
+  // memory->movb(&pt_entry, address, sizeof(uint32_t));
+  // std::cout << "TEST UPT: " << std::hex << pt_entry << ":" << allocatedFramePTE[0] << "\n";
 
 return user.page_table_base;
 
