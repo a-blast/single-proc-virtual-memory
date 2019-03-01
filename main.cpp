@@ -8,39 +8,113 @@
 #include "MemoryAllocator.h"
 
 #include <MMU.h>
+//Can't find .h file even though it's in the same folder and auto complete works
+//#include <WritePermissionFaultHandler.h> 
+//#include <PageFaultHandler.h>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 
-void setPageTable(mem::MMU &vm, mem::Addr pt_addr){
+/**
+   * WritePermissionFaultHandler - page fault handler
+   * 
+   * This handler always returns false to abort the operation.
+   */
+  class WritePermissionFaultHandler : public mem::MMU::FaultHandler {
+  public:
+    WritePermissionFaultHandler(){}
+    
+    /**
+     * Run - handle fault
+     * 
+     * Increment fault count, save pmcb.
+     * 
+     * @param pmcb Processor Memory Control Block
+     * @return bool, false
+     */ 
+    virtual bool Run(const mem::PMCB &pmcb) {
+      std::cout << "Write Page Fault at address " << 
+                pmcb.next_vaddress << "\n";
+      return false;
+    }
+  };
+  
+  /**
+   * PageFaultHandler - page fault handler
+   * 
+   * The handler returns true if it successfully allocated the required page
+   * frames, false otherwise.
+ */
+  class PageFaultHandler : public mem::MMU::FaultHandler {
+  public:
+    PageFaultHandler(){}
+    
+    /**
+     * Run - handle fault
+     * 
+     * 
+     * @param pmcb Processor Memory Control Block
+     * @return bool, true if successfully allocated page frame, false otherwise
+     */
+    virtual bool Run(const mem::PMCB &pmcb) {
+        std::cout << "Read Page Fault Error at address " << 
+                pmcb.next_vaddress << "\n";
+        
+//        if(allocator.AllocatePageFrames(
+//                (std::hex >> pmcb.remaining_count)/kPageSize, 
+//                &pmcb.next_vaddress)){
+//            return true;
+//        }
+//        else{
+//            return false;
+//        }
+        return false;
+    }
+  };
+
+void setPageTable(mem::MMU &vm, mem::Addr pt_addr, MemoryAllocator& allocator){
   mem::PageTable kernel_page_table;  // local copy of page table to build, initialized to 0
   mem::Addr num_pages = vm.get_frame_count();  // size of physical memory
   // Build page table entries
-  for (mem::Addr i = 0; i < num_pages; ++i) {
-    kernel_page_table.at(i) = 
-      (i << mem::kPageSizeBits);
+  std::cout << num_pages << "\n";
+  for (mem::Addr i = 1; i < num_pages; ++i) {
+    kernel_page_table.at(i) = (i << mem::kPageSizeBits);
   }
+  
   // Write page table to memory
-  vm.movb(pt_addr, &kernel_page_table, mem::kPageTableSizeBytes);
+  allocator.PageTableToMemory(&vm, pt_addr, &kernel_page_table, 
+          mem::kPageTableSizeBits);
 }
+
 
 int main(int argc, char** argv) {
 
   if (argc != 2) {
-    std::cerr << "usage: Lab4 trace_file\n";
+    std::cerr << "usage: Program2 trace_file\n";
     exit(1);
   }
 
   // 1. Create a instance of MMU w/ 128 (0x80) page frames
   mem::MMU* memory = new mem::MMU(128);
 
-  // Set kernel page table
-  mem::pageTable kernelPT = setPageTable(*memory, mem::kPageSize);
-  mem::PMCB kernel_pmcb(mem::kPageSize);
-  memory.enter_virtual_mode(kernel_pmcb);
-
   // initialize an allocator that points to the MMU physical mem instance
   MemoryAllocator* allocator = new MemoryAllocator(128, memory);
+  
+  // Set kernel page table
+  setPageTable(*memory, mem::kPageSize, *allocator);
+  mem::PMCB kernel_pmcb(mem::kPageSize);
+  memory->enter_virtual_mode(kernel_pmcb);
+  
+  
+  // Check that present bit is observed
+std::shared_ptr<PageFaultHandler> pf_handler(
+    std::make_shared<PageFaultHandler>());  // define a page fault handler
+memory->SetPageFaultHandler(pf_handler);
+    
+// Set up write fault handler
+std::shared_ptr<WritePermissionFaultHandler> wpf_handler(
+      std::make_shared<WritePermissionFaultHandler>());
+memory->SetWritePermissionFaultHandler(wpf_handler);
 
   delete memory;
   delete allocator;
@@ -49,4 +123,3 @@ int main(int argc, char** argv) {
   allocator = NULL;
   return 0;
 }
-
