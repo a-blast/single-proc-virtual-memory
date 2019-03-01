@@ -87,14 +87,14 @@ int main(int argc, char** argv) {
   MemoryAllocator* allocator = new MemoryAllocator(128, memory);
 
   // Check that present bit is observed
-std::shared_ptr<PageFaultHandler> pf_handler(
-    std::make_shared<PageFaultHandler>());  // define a page fault handler
-memory->SetPageFaultHandler(pf_handler);
+  std::shared_ptr<PageFaultHandler>
+    pf_handler(std::make_shared<PageFaultHandler>());  // define a page fault handler
+  memory->SetPageFaultHandler(pf_handler);
     
-// Set up write fault handler
-std::shared_ptr<WritePermissionFaultHandler> wpf_handler(
-      std::make_shared<WritePermissionFaultHandler>());
-memory->SetWritePermissionFaultHandler(wpf_handler);
+  // Set up write fault handler
+  std::shared_ptr<WritePermissionFaultHandler>
+    wpf_handler(std::make_shared<WritePermissionFaultHandler>());
+  memory->SetWritePermissionFaultHandler(wpf_handler);
 
   delete memory;
   delete allocator;
