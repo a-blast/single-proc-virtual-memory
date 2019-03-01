@@ -55,14 +55,20 @@ MemoryAllocator::MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr 
 
 }
 
-bool MemoryAllocator::Alloc(mem::Addr address, int numFrames, bool hasPageTable){
+mem::Addr MemoryAllocator::Alloc(mem::Addr address, int numFrames, bool hasPageTable){
 
   if(!hasPageTable){
     // 1 page for the PT
     std::vector<uint32_t> procPageAddr;
     AllocatePageFrames(1,procPageAddr);
+
+
     // convert to virtual address
     uint32_t procPageVirtAddr = (procPageAddr[0]/0x4000) << mem::kPageSizeBits;
+    // 0 initialize the pages
+    int initializer[mem::kPageSize] = {0};
+    memory->movb(procPageVirtAddr, &initializer, mem::kPageSize);
+
     mem::PageTable procPageTable;
     memory->movb(procPageVirtAddr, &procPageTable, mem::kPageTableSizeBytes);
     mem::PMCB user_pmcb(procPageVirtAddr);
@@ -83,13 +89,23 @@ bool MemoryAllocator::Alloc(mem::Addr address, int numFrames, bool hasPageTable)
   memory->get_user_PMCB(user);
   memory->set_kernel_PMCB();
 
+  // 0 initialize the allocated (non PT) pages
+  // TODO clean this up... repeats code from above 
+  std::for_each(allocatedFrameAddr.begin(), allocatedFrameAddr.end(),
+                [this](uint32_t vAddr){
+                  int init[mem::kPageSize] = {0};
+                  this->memory->movb(((vAddr/0x4000) << 14), &init, mem::kPageSize);
+                });
+
   memory->movb(user.page_table_base,
                &allocatedFrameVirtAddr,
                sizeof(uint32_t)*allocatedFrameVirtAddr.size());
 
+
+
   memory->set_user_PMCB(user);
 
-  return true;
+return user.page_table_base;
 
 }
 
@@ -101,7 +117,11 @@ bool MemoryAllocator::AllocatePageFrames(uint32_t count,
       freeFrame = freeList[freeList.size()-1];
       freeList.pop_back();
       page_frames.push_back(freeFrame);
+
+
     }
+
+
     return true;
   }else{
     return false;

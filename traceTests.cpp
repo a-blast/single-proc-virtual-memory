@@ -115,8 +115,12 @@ TEST(MemAllocator, Allocate){
   std::cout << std::hex << pt_entry << "\n";
 
 
-  allocator->Alloc(0x2340000,1,false);
+  mem::Addr allocated = allocator->Alloc(0x2340000,1,false);
 
+  memory->set_kernel_PMCB();
+  std::cout << std::hex << allocated << "\n";
+  memory->movb(&pt_entry, allocated , sizeof(uint32_t));
+  std::cout << std::hex << pt_entry << "\n";
 
 
 }
