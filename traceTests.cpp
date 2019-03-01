@@ -107,7 +107,17 @@ TEST(MemAllocator, Allocate){
   // Allocate a single page frame
   std::vector<uint32_t> pageFrames;
   allocator->AllocatePageFrames(1,pageFrames);
-  std::cout << pageFrames[0] << "\n";
+  std::cout << pageFrames[0]/0x4000 << "\n";
+
+  uint32_t pt_entry;
+  memory->movb(&pt_entry,
+               mem::kPageTableSizeBytes+(sizeof(uint32_t)*3), sizeof(uint32_t));
+  std::cout << std::hex << pt_entry << "\n";
+
+
+  allocator->Alloc(0x2340000,1,false);
+
+
 
 }
 

@@ -27,12 +27,6 @@ int main(int argc, char** argv) {
   MemoryAllocator* allocator = new MemoryAllocator(128, memory);
   // Set kernel page table
 
-  std::cout << memory->get_frame_count() <<"!!!\n";
-  setPageTable(*memory, mem::kPageSize);
-  mem::PMCB kernel_pmcb(mem::kPageSize);
-  memory->enter_virtual_mode(kernel_pmcb);
-
-  
 
 
   delete memory;

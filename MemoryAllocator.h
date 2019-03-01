@@ -42,6 +42,8 @@ public:
    * @return true if success, false if insufficient page frames (no frames allocated)
    */
   bool AllocatePageFrames(uint32_t count, std::vector<uint32_t> &page_frames);
+
+  bool Alloc(mem::Addr address, int numFrames, bool hasPageTable);
   
   /**
    * FreePageFrames - return page frames to free list

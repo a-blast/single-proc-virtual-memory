@@ -13,6 +13,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 MemoryAllocator::MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr ) 
 : memory(memoryPtr)
@@ -54,6 +55,44 @@ MemoryAllocator::MemoryAllocator(uint32_t page_frame_count, mem::MMU* memoryPtr 
 
 }
 
+bool MemoryAllocator::Alloc(mem::Addr address, int numFrames, bool hasPageTable){
+
+  if(!hasPageTable){
+    // 1 page for the PT
+    std::vector<uint32_t> procPageAddr;
+    AllocatePageFrames(1,procPageAddr);
+    // convert to virtual address
+    uint32_t procPageVirtAddr = (procPageAddr[0]/0x4000) << mem::kPageSizeBits;
+    mem::PageTable procPageTable;
+    memory->movb(procPageVirtAddr, &procPageTable, mem::kPageTableSizeBytes);
+    mem::PMCB user_pmcb(procPageVirtAddr);
+    memory->set_user_PMCB(user_pmcb);
+  }
+
+  std::vector<uint32_t> allocatedFrameAddr;
+  AllocatePageFrames(numFrames, allocatedFrameAddr);
+  std::vector<uint32_t> allocatedFrameVirtAddr;
+  allocatedFrameVirtAddr.resize(allocatedFrameAddr.size());
+
+  std::transform(allocatedFrameAddr.begin(),allocatedFrameAddr.end(),
+                 allocatedFrameVirtAddr.begin(),
+                 [](uint32_t addr)
+                 {return (((addr/0x4000) << 14) | 0x3);});
+
+  mem::PMCB user;
+  memory->get_user_PMCB(user);
+  memory->set_kernel_PMCB();
+
+  memory->movb(user.page_table_base,
+               &allocatedFrameVirtAddr,
+               sizeof(uint32_t)*allocatedFrameVirtAddr.size());
+
+  memory->set_user_PMCB(user);
+
+  return true;
+
+}
+
 bool MemoryAllocator::AllocatePageFrames(uint32_t count, 
                                          std::vector<uint32_t> &page_frames) {
   mem::Addr freeFrame;
@@ -68,6 +107,7 @@ bool MemoryAllocator::AllocatePageFrames(uint32_t count,
     return false;
   }
 }
+
 
 bool MemoryAllocator::FreePageFrames(uint32_t count,
                                      std::vector<uint32_t> &page_frames) {
