@@ -71,6 +71,7 @@
 #include "MemoryAllocator.h"
 
 #include <MMU.h>
+#include "MemoryAllocator.h"
 
 #include <sstream>
 #include <fstream>

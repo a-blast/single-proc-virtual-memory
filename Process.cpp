@@ -174,17 +174,26 @@ void Process::CmdCmp(const string &line,
   for (uint32_t i = 0; i < count; ++i) {
     Addr a1 = addr1 + i;
     uint8_t v1 = 0;
-    memory->movb(&v1, a1);
-    Addr a2 = addr2 + i;
-    uint8_t v2 = 0;
-    memory->movb(&v2, a2);
-    if(v1 != v2) {
-      (debug? outStream: std::cout) << std::setfill('0') << std::hex
-              << "cmp error"
-              << ", addr1 = "  << std::setw(7) << a1
-              << ", value = " << std::setw(2) << static_cast<uint32_t>(v1)
-              << ", addr2 = "  << std::setw(7) << a2
-              << ", value = " << std::setw(2) << static_cast<uint32_t>(v2) << "\n";
+    if (memory->movb(&v1, a1)){
+        Addr a2 = addr2 + i;
+        uint8_t v2 = 0;
+        if (memory->movb(&v2, a2)){
+            if(v1 != v2) {
+                (debug? outStream: std::cout) << std::setfill('0') << std::hex
+                << "cmp error"
+                << ", addr1 = "  << std::setw(7) << a1
+                << ", value = " << std::setw(2) << static_cast<uint32_t>(v1)
+                << ", addr2 = "  << std::setw(7) << a2
+                << ", value = " << std::setw(2) 
+                << static_cast<uint32_t>(v2) << "\n";
+            }
+        }
+        else{
+            return;
+        }
+    }
+    else{
+        return;
     }
   }
 }
@@ -196,7 +205,11 @@ void Process::CmdSet(const string &line,
   Addr addr = cmdArgs.at(0);
   for (int i = 1; i < cmdArgs.size(); ++i) {
     uint8_t b = cmdArgs.at(i);
-    memory->movb(addr++, &b);
+    if (memory->movb(addr++, &b)){
+    }
+    else{
+        return;
+    }
   }
 }
 
@@ -216,12 +229,20 @@ void Process::CmdDup(const string &line,
   // Buffer for copy (copy a block at a time for efficiency)
   uint8_t buffer[1024];
   while (count > 0) {
-    uint32_t block_size = std::min((unsigned long) count, sizeof(buffer));
-    memory->movb(buffer, src, block_size);
-    src += block_size;
-    memory->movb(dst, buffer, block_size);
-    dst += block_size;
-    count -= block_size;
+    uint32_t block_size = std::min((unsigned long) count,(unsigned long) sizeof(buffer));
+    if (memory->movb(buffer, src, block_size)){
+        src += block_size;
+        if (memory->movb(dst, buffer, block_size)){
+            dst += block_size;
+            count -= block_size;
+        }
+        else{
+            return;
+        }
+    }
+    else{
+        return;
+    }
   }
 }
 
@@ -235,14 +256,18 @@ void Process::CmdFill(const string &line,
 
   // Use buffer for efficiency
   uint8_t buffer[1024];
-  memset(buffer, value, std::min((unsigned long) count, sizeof(buffer)));
+  memset(buffer, value, std::min((unsigned long) count,(unsigned long) sizeof(buffer)));
 
   // Write data to memory
   while (count > 0) {
-    uint32_t block_size = std::min((unsigned long) count, sizeof(buffer));
-    memory->movb(addr, buffer, block_size);
-    addr += block_size;
-    count -= block_size;
+    uint32_t block_size = std::min((unsigned long) count,(unsigned long) sizeof(buffer));
+    if (memory->movb(addr, buffer, block_size)){
+        addr += block_size;
+        count -= block_size;
+    }
+    else{
+        return;
+    }
   }
 }
 
@@ -259,11 +284,17 @@ void Process::CmdPrint(const string &line,
       (debug? outStream: std::cout) << std::hex << std::setw(7) << std::setfill('0') << addr << ":";
     }
     uint8_t b;
-    memory->movb(&b, addr++);
-    (debug? outStream: std::cout) << " " << std::setfill('0') << std::setw(2) << static_cast<uint32_t> (b);
+
+    if (memory->movb(&b, addr++)){
+        (debug? outStream: std::cout) << " " << std::setfill('0') << std::setw(2) << static_cast<uint32_t> (b);
+    }
+    else{
+        return;
+    }
   }
   (debug? outStream : std::cout) << "\n";
 }
+
 
 void Process::CmdPerm(const std::string &line,
              const std::string &cmd,
@@ -298,4 +329,5 @@ void Process::CmdPerm(const std::string &line,
 
   // go back to user level
   memory->set_user_PMCB(user);
+
 }
