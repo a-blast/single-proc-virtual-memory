@@ -60,6 +60,14 @@ public:
    */
   void initUserPageTable(void);
 
+  /*
+    Alloc - allocates page frames for a process
+    by calling AllocatePageFrames & sets them in memory 0 initialized
+    Updates the user page table
+    creates a user page table if none exist
+    @returns base address of user page table
+   */
+
   mem::Addr Alloc(mem::Addr address, int numFrames, bool hasPageTable);
   
   /**

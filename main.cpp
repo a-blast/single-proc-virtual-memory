@@ -10,8 +10,6 @@
 #include "Process.h"
 
 #include <MMU.h>
-//Can't find .h file even though it's in the same folder and auto complete works
-//#include <WritePermissionFaultHandler.h> 
 #include <cstdlib>
 #include <iostream>
 #include <memory>

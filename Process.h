@@ -106,8 +106,17 @@ public:
    */
   void Exec(void);
 
+  /*
+    setDebug - redirects output from cout
+    to a stream member variable so I cant unit test traces
+   */
   void setDebug(void);
 
+  /*
+    getStream - gets the member variable stream collected if setDebug executed and returns it
+    as a string
+    @returns string of process output
+   */
   std::string getStream();
   
 private:

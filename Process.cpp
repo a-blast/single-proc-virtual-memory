@@ -322,7 +322,8 @@ void Process::CmdPerm(const std::string &line,
 
     // get the UPTE so we can apply the writable bit mask
     memory->movb(&PTE_buffer, pt_offset, sizeof(uint32_t));
-    PTE_buffer = ((bool) cmdArgs[2]? (PTE_buffer | 0x1) : ((PTE_buffer >> 1) << 1));
+    PTE_buffer = ((bool) cmdArgs[2]? (PTE_buffer | 0x3) : ((PTE_buffer >> 1) << 1));
+    //std::cout << std::hex << PTE_buffer;
     // set the UPTE back in the PTE
     memory->movb(pt_offset, &PTE_buffer, sizeof(uint32_t));
   }
