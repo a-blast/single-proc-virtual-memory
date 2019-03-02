@@ -7,6 +7,7 @@
 
 #include "MemoryAllocator.h"
 #include "PageFaultHandler.h"
+#include "Process.h"
 
 #include <MMU.h>
 //Can't find .h file even though it's in the same folder and auto complete works
@@ -39,6 +40,11 @@ int main(int argc, char** argv) {
   std::shared_ptr<WritePermissionFaultHandler>
     wpf_handler(std::make_shared<WritePermissionFaultHandler>());
   memory->SetWritePermissionFaultHandler(wpf_handler);
+
+  Process proc(argv[1], memory, allocator);
+  proc.Exec();
+  //std::istringstream outStream(proc.getStream());
+
 
   delete memory;
   delete allocator;

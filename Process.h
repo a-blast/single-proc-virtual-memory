@@ -85,7 +85,8 @@ public:
    * 
    * @param file_name_ source of trace commands
    */
-  Process(std::string file_name_, mem::MMU* memoryPtr, MemoryAllocator* allocatorPtr);
+  Process(std::string file_name_, mem::MMU* memoryPtr,
+          MemoryAllocator* allocatorPtr);
   
   /**
    * Destructor - close trace file, clean up processing
@@ -104,6 +105,8 @@ public:
    */
   void Exec(void);
 
+  void setDebug(void);
+
   std::string getStream();
   
 private:
@@ -120,6 +123,7 @@ private:
   MemoryAllocator *allocator;
 
   bool hasPageTable;
+  bool debug=false;
 
   /**
    * ParseCommand - parse a trace file command.

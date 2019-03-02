@@ -1,6 +1,6 @@
 /*
- * Process implementation 
- * 
+ * Process implementation
+ *
  * File:   Process.cpp
  * Author: Mike Goss <mikegoss@cs.du.edu>
  * COMP3361 Winter 2019 Lab 4 Sample Solution
@@ -29,7 +29,8 @@ using std::vector;
 
 Process::Process(string file_name_, mem::MMU* memoryPtr, MemoryAllocator* allocatorPtr)
   : file_name(file_name_), line_number(0),
-    memory(memoryPtr), allocator(allocatorPtr), hasPageTable(false){
+    memory(memoryPtr), allocator(allocatorPtr),
+    hasPageTable(false){
   // Open the trace file.  Abort program if can't open.
   trace.open(file_name, std::ios_base::in);
   if (!trace.is_open()) {
@@ -48,38 +49,38 @@ void Process::Exec(void) {
   string cmd;                 // command from line
   vector<uint32_t> cmdArgs;   // arguments from line
   int lineNumber = 0;
-  
+
   // Select the command to execute
   while (ParseCommand(line, cmd, cmdArgs)) {
     if(cmd == "alloc"){
       CmdAlloc(line, cmd, cmdArgs);
-      outStream << "\n";
+      (debug? outStream: std::cout) << "\n";
     } else if (cmd == "cmp") {
-      outStream << "\n";
+      (debug? outStream: std::cout) << "\n";
       CmdCmp(line, cmd, cmdArgs);        // get and compare multiple bytes
     } else if (cmd == "set") {
-      outStream << "\n";
+      (debug? outStream: std::cout) << "\n";
       CmdSet(line, cmd, cmdArgs);        // put bytes
     } else if (cmd == "fill") {
-      outStream << "\n";
+      (debug? outStream: std::cout) << "\n";
       CmdFill(line, cmd, cmdArgs);       // fill bytes with value
     } else if (cmd == "dup") {
-      outStream << "\n";
+      (debug? outStream: std::cout) << "\n";
       CmdDup(line, cmd, cmdArgs);        // duplicate bytes to dest from source
     } else if (cmd == "print") {
-      outStream << "\n";
+      (debug? outStream: std::cout) << "\n";
       CmdPrint(line, cmd, cmdArgs);      // dump byte values to output
     } else if (cmd == "perm"){
-      outStream << " TODO: implement perm\n";
+      (debug? outStream: std::cout) << " TODO: implement perm\n";
     } else if (cmd == "*"){
-      outStream << "\n";
+      (debug? outStream: std::cout) << "\n";
     } else if (cmd != "*") {
       cerr << "ERROR: invalid command\n";
       exit(2);
     }
 
     // newline, so TODO messages get put on their relevant command lines
-    //outStream << "\n";
+    //(debug? outStream: std::cout) << "\n";
   }
 }
 
@@ -87,25 +88,29 @@ std::string Process::getStream(){
   return outStream.str();
 }
 
+void Process::setDebug(){
+  debug=true;
+}
+
 bool Process::ParseCommand(
     string &line, string &cmd, vector<uint32_t> &cmdArgs) {
   cmdArgs.clear();
   line.clear();
-  
+
   // Read next line
   if (std::getline(trace, line)) {
     ++line_number;
-    outStream << std::dec << line_number << ":" << line;
-    
+    (debug? outStream: std::cout) << std::dec << line_number << ":" << line;
+
     // No further processing if comment or empty line
     if (line.size() == 0 || line[0] == '*') {
       cmd = "*";
       return true;
     }
-    
+
     // Make a string stream from command line
     istringstream lineStream(line);
-    
+
     // Get address
     uint32_t addr = 0;
     if (!(lineStream >> std::hex >> addr)) {
@@ -120,14 +125,14 @@ bool Process::ParseCommand(
       }
     }
     cmdArgs.push_back(addr);
-    
+
     // Get command
     if (!(lineStream >> cmd)) {
       cerr << "ERROR: no command name following address in trace file: "
               << file_name << " at line " << line_number << "\n";
       exit(2);
     }
-    
+
     // Get any additional arguments
     Addr arg;
     while (lineStream >> std::hex >> arg) {
@@ -173,7 +178,7 @@ void Process::CmdCmp(const string &line,
     uint8_t v2 = 0;
     memory->movb(&v2, a2);
     if(v1 != v2) {
-      outStream << std::setfill('0') << std::hex
+      (debug? outStream: std::cout) << std::setfill('0') << std::hex
               << "cmp error"
               << ", addr1 = "  << std::setw(7) << a1
               << ", value = " << std::setw(2) << static_cast<uint32_t>(v1)
@@ -201,12 +206,12 @@ void Process::CmdDup(const string &line,
     cerr << "ERROR: badly formatted dup command\n";
     exit(2);
   }
-  
+
   // Copy specified number of bytes to destination from source
   Addr dst = cmdArgs.at(1);
   Addr src = cmdArgs.at(0);
   uint32_t count = cmdArgs.at(2);
-  
+
   // Buffer for copy (copy a block at a time for efficiency)
   uint8_t buffer[1024];
   while (count > 0) {
@@ -226,11 +231,11 @@ void Process::CmdFill(const string &line,
   uint8_t value = cmdArgs.at(1);
   uint32_t count = cmdArgs.at(2);
   Addr addr = cmdArgs.at(0);
-  
+
   // Use buffer for efficiency
   uint8_t buffer[1024];
   memset(buffer, value, std::min((unsigned long) count, sizeof(buffer)));
-  
+
   // Write data to memory
   while (count > 0) {
     uint32_t block_size = std::min((unsigned long) count, sizeof(buffer));
@@ -249,12 +254,37 @@ void Process::CmdPrint(const string &line,
   // Output the specified number of bytes starting at the address
   for (int i = 0; i < count; ++i) {
     if ((i % 16) == 0) { // Write new line with address every 16 bytes
-      if (i > 0) outStream << "\n";  // not before first line
-      outStream << std::hex << std::setw(7) << std::setfill('0') << addr << ":";
+      if (i > 0) (debug? outStream: std::cout) << "\n";  // not before first line
+      (debug? outStream: std::cout) << std::hex << std::setw(7) << std::setfill('0') << addr << ":";
     }
     uint8_t b;
     memory->movb(&b, addr++);
-    outStream << " " << std::setfill('0') << std::setw(2) << static_cast<uint32_t> (b);
+    (debug? outStream: std::cout) << " " << std::setfill('0') << std::setw(2) << static_cast<uint32_t> (b);
   }
-  outStream << "\n";
+  (debug? outStream : std::cout) << "\n";
 }
+
+// void CmdPerm(const std::string &line,
+//              const std::string &cmd,
+//              const std::vector<uint32_t> &cmdArgs){
+
+//   //Goss' code
+//   // Make page present and writable, write, and check modified bit
+//   // page_table[pt_offset] = kPhysStart | kPTE_PresentMask | kPTE_WritableMask;
+//   // vm.movb(kPageTableBase, &page_table, kPageTableSizeBytes);
+
+
+//   // Go into kernel mode to access UPT
+//   memory->set_kernel_PMCB();
+
+//   // Loop over the number of pages to make writable or not
+//   for (int i = 0; i < cmdArgs[1]; i++){
+//     mem::Addr pt_offset = alloc_ptr->user.page_table_base +
+//       ((cmArgs[0]/0x4000) * sizeof(uint32_t))+(sizeof(uint32_t)*i);
+
+//     if (ASSERT_EQ(1, alloc_ptr->user.at(pt_offset) & kPTE_PresentMask)){
+//       // Access each UPTE and make it writable or not
+//       alloc_ptr->user.at(user.page_table_base + ((cmArgs[0]/0x4000)*sizeof(uint32_t))
+//                          +(sizeof(uint32_t)*i)) = kPTE_WritableMask << cmdArgs[2];
+//     }
+//   }

@@ -2,6 +2,7 @@
 #include "gtest/gtest.h"
 #include "Process.h"
 # include "MemoryAllocator.h"
+# include "PageFaultHandler.h"
 # include <MMU.h>
 # include <algorithm>
 # include <string>
@@ -102,6 +103,17 @@ TEST(ProcessOutput, trace5){
   delete memory;
   memory = nullptr;
   memory = new mem::MMU(128);
+
+  // Check that present bit is observed
+  std::shared_ptr<PageFaultHandler>
+    pf_handler(std::make_shared<PageFaultHandler>());  // define a page fault handler
+  memory->SetPageFaultHandler(pf_handler);
+    
+  // Set up write fault handler
+  std::shared_ptr<WritePermissionFaultHandler>
+    wpf_handler(std::make_shared<WritePermissionFaultHandler>());
+  memory->SetWritePermissionFaultHandler(wpf_handler);
+
   MemoryAllocator* allocator = new MemoryAllocator(128, memory);
   std::istringstream ss;
   ss = processOutputGetter("./trace5v_pagefaults.txt", memory, allocator);
@@ -109,27 +121,6 @@ TEST(ProcessOutput, trace5){
   delete memory;
   memory = nullptr;
 }
-
-// TEST(ProcessOutput, trace2){
-//   std::istringstream ss;
-//   ss = processOutputGetter("./trace2v_multi-page.txt");
-//   validateOutput(ss.str(), getExpectedOutput("./trace2v_multi-page.txt.out"));
-// }
-// TEST(ProcessOutput, trace3){
-//   std::istringstream ss;
-//   ss = processOutputGetter("./trace3v_edge-addr.txt");
-//   validateOutput(ss.str(), getExpectedOutput("./trace3v_edge-addr.txt.out"));
-// }
-// TEST(ProcessOutput, trace4){
-//   std::istringstream ss;
-//   ss = processOutputGetter("./trace4v_wprotect.txt");
-//   validateOutput(ss.str(), getExpectedOutput("./trace4v_wprotect.txt.out"));
-// }
-// TEST(ProcessOutput, trace5){
-//   std::istringstream ss;
-//   ss = processOutputGetter("./trace5v_pagefaults.txt");
-//   validateOutput(ss.str(), getExpectedOutput("./trace5v_pagefaults.txt.out"));
-// }
 
 TEST(MemAllocator, Allocate){
 
@@ -162,24 +153,6 @@ TEST(MemAllocator, Allocate){
   delete memory;
   delete allocator;
 }
-
-// TEST(MemAllocator, initKPT){
-//   mem::MMU* memory2 = new mem::MMU(128);
-//   MemoryAllocator* allocator = new MemoryAllocator();
-//   allocator->memory = memory2;
-
-//   allocator->init_KPT();
-
-//   uint32_t kernel_pt_entry;
-//   for(int i = 0; i < 0x7d; ++i){
-//     memory2->movb(&kernel_pt_entry, mem::kPageSize + (i*4), sizeof(uint32_t));
-//     //std::cout << std::hex << kernel_pt_entry << " : " << i <<"\n";
-//   }
-
-//   delete memory2;
-//   delete allocator;
-
-// }
 
 int main(int argc, char* argv[]){
   ::testing::InitGoogleTest(&argc,argv);

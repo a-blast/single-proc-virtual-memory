@@ -23,8 +23,8 @@
      * @return bool, false
      */ 
     virtual bool Run(const mem::PMCB &pmcb) {
-      std::cout << "Write Page Fault at address " << 
-                pmcb.next_vaddress << "\n";
+      std::cout << "Write Page Fault at address "
+                << std::hex << pmcb.next_vaddress << "\n";
       return false;
     }
   };
@@ -47,8 +47,8 @@
      * @return bool, true if successfully allocated page frame, false otherwise
      */
     virtual bool Run(const mem::PMCB &pmcb) {
-        std::cout << "Read Page Fault Error at address " << 
-                pmcb.next_vaddress << "\n";
+        std::cout << "Read Page Fault Error at address "
+                  << std::hex << pmcb.next_vaddress << "\n";
         
 //        if(allocator.AllocatePageFrames(
 //                (std::hex >> pmcb.remaining_count)/kPageSize, 
