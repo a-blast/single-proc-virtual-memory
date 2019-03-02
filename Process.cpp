@@ -7,6 +7,7 @@
  */
 
 #include "Process.h"
+#include "MemoryAllocator.h"
 
 #include <algorithm>
 #include <cctype>
@@ -14,6 +15,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <gtest/gtest.h>
 
 using mem::Addr;
 
@@ -33,6 +35,8 @@ Process::Process(string file_name_)
     cerr << "ERROR: failed to open trace file: " << file_name << "\n";
     exit(2);
   }
+  
+//  calls TPM -> calls allocator, allocates pages and stores 
 }
 
 Process::~Process() {
@@ -51,24 +55,20 @@ void Process::Exec(void) {
     if(cmd == "alloc"){
       outStream << " TODO: implement alloc";
     } else if (cmd == "cmp") {
-      outStream << " TODO: implement cmd";
-      //CmdCmp(line, cmd, cmdArgs);        // get and compare multiple bytes
+      CmdCmp(line, cmd, cmdArgs);        // get and compare multiple bytes
     } else if (cmd == "set") {
-      outStream << "TODO: implement set";
-      //CmdSet(line, cmd, cmdArgs);        // put bytes
+      CmdSet(line, cmd, cmdArgs);        // put bytes
     } else if (cmd == "fill") {
-      outStream << " TODO: implement fill";
-      //CmdFill(line, cmd, cmdArgs);       // fill bytes with value
+      CmdFill(line, cmd, cmdArgs);       // fill bytes with value
     } else if (cmd == "dup") {
-      outStream << " TODO: implement dup";
-      //CmdDup(line, cmd, cmdArgs);        // duplicate bytes to dest from source
+      CmdDup(line, cmd, cmdArgs);        // duplicate bytes to dest from source
     } else if (cmd == "print") {
-      outStream << " TODO: implement print";
-      //CmdPrint(line, cmd, cmdArgs);      // dump byte values to output
+      CmdPrint(line, cmd, cmdArgs);      // dump byte values to output
     } else if (cmd == "perm"){
-      outStream << " TODO: implement perm";
+//        outStream << " TODO: implement perm";
+      CmdPerm(line, cmd, cmdArgs);
     } else if (cmd == "*"){
-      //outStream << line << "\n";
+      outStream << line << "\n";
     } else if (cmd != "*") {
       cerr << "ERROR: invalid command";
       exit(2);
@@ -204,7 +204,7 @@ void Process::CmdDup(const string &line,
   // Buffer for copy (copy a block at a time for efficiency)
   uint8_t buffer[1024];
   while (count > 0) {
-    uint32_t block_size = std::min((unsigned long) count, sizeof(buffer));
+    uint32_t block_size = std::min((unsigned long) count, (unsigned long) sizeof(buffer));
     memory->movb(buffer, src, block_size);
     src += block_size;
     memory->movb(dst, buffer, block_size);
@@ -223,11 +223,11 @@ void Process::CmdFill(const string &line,
   
   // Use buffer for efficiency
   uint8_t buffer[1024];
-  memset(buffer, value, std::min((unsigned long) count, sizeof(buffer)));
+  memset(buffer, value, std::min((unsigned long) count, (unsigned long) sizeof(buffer)));
   
   // Write data to memory
   while (count > 0) {
-    uint32_t block_size = std::min((unsigned long) count, sizeof(buffer));
+    uint32_t block_size = std::min((unsigned long) count,(unsigned long) sizeof(buffer));
     memory->movb(addr, buffer, block_size);
     addr += block_size;
     count -= block_size;
@@ -252,3 +252,41 @@ void Process::CmdPrint(const string &line,
   }
   outStream << "\n";
 }
+
+void CmdPerm(const std::string &line,
+                const std::string &cmd,
+                const std::vector<uint32_t> &cmdArgs){
+    
+    //Goss' code
+    // Make page present and writable, write, and check modified bit
+    // page_table[pt_offset] = kPhysStart | kPTE_PresentMask | kPTE_WritableMask;
+    // vm.movb(kPageTableBase, &page_table, kPageTableSizeBytes);
+    
+    
+    // Go into kernel mode to access UPT
+    memory->set_kernel_PMCB();
+            
+    // Loop over the number of pages to make writable or not
+    for (int i = 0; i < cmdArgs[1]; i++){
+        mem::Addr pt_offset = alloc_ptr->user.page_table_base +
+                ((cmArgs[0]/0x4000) * sizeof(uint32_t))+(sizeof(uint32_t)*i);
+                
+        if (ASSERT_EQ(1, alloc_ptr->user.at(pt_offset) & kPTE_PresentMask)){
+            // Access each UPTE and make it writable or not
+            alloc_ptr->user.at(user.page_table_base + ((cmArgs[0]/0x4000)*sizeof(uint32_t))
+                    +(sizeof(uint32_t)*i)) = kPTE_WritableMask << cmdArgs[2];
+        }
+    }
+    
+//        page_table.at((cmdArgs[0]+i*mem::kPageSize)/(mem::kPageSize)) = 
+//                mem::kPhysStart | mem::kPTE_PresentMask | 
+//                mem::kPTE_WritableMask << cmdArgs[2];
+    
+}
+        
+        
+    
+        
+
+    
+

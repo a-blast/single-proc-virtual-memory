@@ -69,6 +69,7 @@
 #define PROCESS_H
 
 #include <MMU.h>
+#include "MemoryAllocator.h"
 
 #include <sstream>
 #include <fstream>
@@ -113,7 +114,10 @@ private:
   std::stringstream outStream;
 
   // Memory contents
-  std::unique_ptr<mem::MMU> memory;
+  mem::MMU* memory;
+  
+  // Allocator pointer
+  mem::MemoryAllocator* alloc_ptr;
   
   /**
    * ParseCommand - parse a trace file command.
@@ -152,6 +156,9 @@ private:
   void CmdPrint(const std::string &line, 
               const std::string &cmd, 
               const std::vector<uint32_t> &cmdArgs);
+  void CmdPerm(const std::string &line,
+                const std::string &cmd,
+                const std::vector<uint32_t> &cmdArgs);
 };
 
 #endif /* PROCESS_H */
