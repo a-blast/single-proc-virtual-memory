@@ -14,6 +14,7 @@
 auto processOutputGetter =
   [](std::string filePath, mem::MMU *memory, MemoryAllocator *allocator){
     Process proc(filePath, memory, allocator);
+    proc.setDebug();
     proc.Exec();
     std::istringstream outStream(proc.getStream());
     return outStream;
@@ -99,28 +100,28 @@ TEST(ProcessOutput, trace4){
   memory = nullptr;
 }
 
-TEST(ProcessOutput, trace5){
-  delete memory;
-  memory = nullptr;
-  memory = new mem::MMU(128);
+// TEST(ProcessOutput, trace5){
+//   delete memory;
+//   memory = nullptr;
+//   memory = new mem::MMU(128);
 
-  // Check that present bit is observed
-  std::shared_ptr<PageFaultHandler>
-    pf_handler(std::make_shared<PageFaultHandler>());  // define a page fault handler
-  memory->SetPageFaultHandler(pf_handler);
+//   // Check that present bit is observed
+//   std::shared_ptr<PageFaultHandler>
+//     pf_handler(std::make_shared<PageFaultHandler>());  // define a page fault handler
+//   memory->SetPageFaultHandler(pf_handler);
     
-  // Set up write fault handler
-  std::shared_ptr<WritePermissionFaultHandler>
-    wpf_handler(std::make_shared<WritePermissionFaultHandler>());
-  memory->SetWritePermissionFaultHandler(wpf_handler);
+//   // Set up write fault handler
+//   std::shared_ptr<WritePermissionFaultHandler>
+//     wpf_handler(std::make_shared<WritePermissionFaultHandler>());
+//   memory->SetWritePermissionFaultHandler(wpf_handler);
 
-  MemoryAllocator* allocator = new MemoryAllocator(128, memory);
-  std::istringstream ss;
-  ss = processOutputGetter("./trace5v_pagefaults.txt", memory, allocator);
-  validateOutput(ss.str(), getExpectedOutput("./trace5v_pagefaults.txt.out"),true);
-  delete memory;
-  memory = nullptr;
-}
+//   MemoryAllocator* allocator = new MemoryAllocator(128, memory);
+//   std::istringstream ss;
+//   ss = processOutputGetter("./trace5v_pagefaults.txt", memory, allocator);
+//   validateOutput(ss.str(), getExpectedOutput("./trace5v_pagefaults.txt.out"),true);
+//   delete memory;
+//   memory = nullptr;
+// }
 
 TEST(MemAllocator, Allocate){
 

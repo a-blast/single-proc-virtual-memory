@@ -71,7 +71,8 @@ void Process::Exec(void) {
       (debug? outStream: std::cout) << "\n";
       CmdPrint(line, cmd, cmdArgs);      // dump byte values to output
     } else if (cmd == "perm"){
-      (debug? outStream: std::cout) << " TODO: implement perm\n";
+      (debug? outStream: std::cout) << "\n";
+      CmdPerm(line, cmd, cmdArgs);
     } else if (cmd == "*"){
       (debug? outStream: std::cout) << "\n";
     } else if (cmd != "*") {
@@ -264,27 +265,37 @@ void Process::CmdPrint(const string &line,
   (debug? outStream : std::cout) << "\n";
 }
 
-// void CmdPerm(const std::string &line,
-//              const std::string &cmd,
-//              const std::vector<uint32_t> &cmdArgs){
+void Process::CmdPerm(const std::string &line,
+             const std::string &cmd,
+             const std::vector<uint32_t> &cmdArgs){
 
-//   //Goss' code
-//   // Make page present and writable, write, and check modified bit
-//   // page_table[pt_offset] = kPhysStart | kPTE_PresentMask | kPTE_WritableMask;
-//   // vm.movb(kPageTableBase, &page_table, kPageTableSizeBytes);
+  //Goss' code
+  // Make page present and writable, write, and check modified bit
+  // page_table[pt_offset] = kPhysStart | kPTE_PresentMask | kPTE_WritableMask;
+  // vm.movb(kPageTableBase, &page_table, kPageTableSizeBytes);
 
 
-//   // Go into kernel mode to access UPT
-//   memory->set_kernel_PMCB();
+  // Save the user PMCB so we can go back
+  mem::PMCB user;
+  memory->get_user_PMCB(user);
+  memory->set_kernel_PMCB();
 
-//   // Loop over the number of pages to make writable or not
-//   for (int i = 0; i < cmdArgs[1]; i++){
-//     mem::Addr pt_offset = alloc_ptr->user.page_table_base +
-//       ((cmArgs[0]/0x4000) * sizeof(uint32_t))+(sizeof(uint32_t)*i);
+  uint32_t PTE_buffer;
 
-//     if (ASSERT_EQ(1, alloc_ptr->user.at(pt_offset) & kPTE_PresentMask)){
-//       // Access each UPTE and make it writable or not
-//       alloc_ptr->user.at(user.page_table_base + ((cmArgs[0]/0x4000)*sizeof(uint32_t))
-//                          +(sizeof(uint32_t)*i)) = kPTE_WritableMask << cmdArgs[2];
-//     }
-//   }
+  // Loop over the number of pages to make writable or not
+  for (int i = 0; i < cmdArgs[1]; i++){
+    mem::Addr pt_offset =
+      user.page_table_base
+      +((cmdArgs[0]/0x4000) * sizeof(uint32_t))
+      +(sizeof(uint32_t)*i);
+
+    // get the UPTE so we can apply the writable bit mask
+    memory->movb(&PTE_buffer, pt_offset, sizeof(uint32_t));
+    PTE_buffer = ((bool) cmdArgs[2]? (PTE_buffer | 0x1) : ((PTE_buffer >> 1) << 1));
+    // set the UPTE back in the PTE
+    memory->movb(pt_offset, &PTE_buffer, sizeof(uint32_t));
+  }
+
+  // go back to user level
+  memory->set_user_PMCB(user);
+}

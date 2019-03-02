@@ -162,6 +162,9 @@ private:
   void CmdPrint(const std::string &line, 
               const std::string &cmd, 
               const std::vector<uint32_t> &cmdArgs);
+  void CmdPerm(const std::string &line, 
+                const std::string &cmd, 
+                const std::vector<uint32_t> &cmdArgs);
 };
 
 #endif /* PROCESS_H */
