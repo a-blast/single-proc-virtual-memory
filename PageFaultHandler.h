@@ -4,6 +4,7 @@
 #include <MMU.h>
 
 #include <iostream>
+#include  <iomanip>
 
 /**
    * WritePermissionFaultHandler - page fault handler
@@ -24,6 +25,7 @@
      */ 
     virtual bool Run(const mem::PMCB &pmcb) {
       std::cout << "Write Page Fault at address "
+                << std::setfill('0') << std::setw(7)
                 << std::hex << pmcb.next_vaddress << "\n";
       return false;
     }
@@ -48,6 +50,7 @@
      */
     virtual bool Run(const mem::PMCB &pmcb) {
         std::cout << "Read Page Fault Error at address "
+                  << std::setfill('0') << std::setw(7)
                   << std::hex << pmcb.next_vaddress << "\n";
         
 //        if(allocator.AllocatePageFrames(
